@@ -1,6 +1,8 @@
 # FieldtypeKeyValueMultiple (ALPHA)
 **Please know that this fieldtype is considered alpha and missing important features**
 
+Note that the code is still quiet messy. Cleanup will be done once it's out of alpha. And more documentation will follow, too.
+
 **This module is derived from [FieldtypeEvents](https://github.com/ryancramerdesign/FieldtypeEvents)**
 
 Its purpose is to provide kind of a basic two column table, with customizable column names to have it shareable between different templates for different purposes.
