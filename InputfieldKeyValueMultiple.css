@@ -1,0 +1,47 @@
+.InputfieldKeyValueMultiple {
+	width: 100%;
+}
+
+.InputfieldKeyValueMultiple table tr {
+	border: none; 
+}
+
+.InputfieldKeyValueMultiple th {
+	padding-bottom: 0;
+	font-weight: bold; 
+}
+
+.InputfieldKeyValueMultiple tr.KeyValueTemplate {
+	display: none; 
+}
+
+.InputfieldKeyValueMultiple tr:not(.KeyValueTBD):hover td {
+	background: #eee; 
+}
+
+.InputfieldKeyValueMultiple input[type=text],
+.InputfieldKeyValueMultiple input[type=date],
+.InputfieldKeyValueMultiple input[type=number] {
+	width: 100%; 
+}
+.InputfieldKeyValueMultiple th,
+.InputfieldKeyValueMultiple td {
+	padding: 6px 2px; 
+	border-bottom: 1px solid #ddd; 
+}
+
+.InputfieldKeyValueMultiple .KeyValueClone {
+	width: 3%; 
+	padding-left: 1%; 
+	text-align: center; 
+}
+
+.InputfieldKeyValueMultiple a.KeyValueClone,
+.InputfieldKeyValueMultiple a.KeyValueDel {
+	display: block;
+}
+
+.InputfieldKeyValueMultiple .KeyValueTBD td input {
+	text-decoration: line-through; 
+}
+

@@ -1,0 +1,222 @@
+<?php
+
+/**
+ * A field that stores key/value pairs each with a date, location and notes
+ * 
+ * This is an example of creating your own Fieldtype to represent a spreadsheet type table of information.
+ *
+ */
+
+class FieldtypeKeyValueMultiple extends FieldtypeMulti {
+
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Key Value Multiple',
+			'version' => 1,
+			'summary' => 'Field that stores a table of multiple key/value pairs',
+			'installs' => 'InputfieldKeyValueMultiple', 
+			);
+	}
+
+	/**
+	 * Initialize this Fieldtype
+	 *
+	 */
+	public function init() {
+		parent::init();
+		$dir = dirname(__FILE__);
+		require_once("$dir/KeyValue.php"); 
+		require_once("$dir/KeyValueArray.php"); 
+
+		$this->set('sorting', 'key');
+	}
+
+	/**
+	 * Return the required Inputfield used to populate a field of this type
+	 *
+	 */
+	public function getInputfield(Page $page, Field $field) {
+		$inputfield = $this->modules->get("InputfieldKeyValueMultiple"); 
+
+		// our inputfield requires a Page and Field (most Inputfields don't)
+		$inputfield->setPage($page);
+		$inputfield->setField($field); 
+
+		return $inputfield; 
+	}
+
+
+	public function ___getConfigArray(Field $field) {
+		return array(
+			'sorting' => array(
+				'type' => 'select',
+				'label' => $this->_('How to sort key/value pairs'),
+				'options' => array(
+					'label' => $this->_("By label field ASC"),
+					'-label' => $this->_("By label field DESC"),
+					'sort' => $this->_("Manually (Drag'n'Drop)"),
+				),
+				'value' => 'label' // default sorting
+			)
+		);
+	}
+
+
+	public function ___getConfigAllowContext(Field $field) {
+		return array(
+			'sorting'
+			); 
+	}
+
+	/**
+	 * Return a blank ready-to-populate version of a field of this type
+	 *
+	 */
+	public function getBlankValue(Page $page, Field $field) {
+		$keyValuePairs = new KeyValueArray($page);
+		$keyValuePairs->setTrackChanges(true); 
+		return $keyValuePairs; 
+	}
+
+
+    /**
+     * Given a raw value (value as stored in DB), return the value as it would appear in a Page object
+	 *
+     * @param Page $page
+     * @param Field $field
+     * @param string|int|array $value
+     * @return string|int|array|object $value
+     *
+     */
+    public function ___wakeupValue(Page $page, Field $field, $value) {
+
+		// if for some reason we already get a valid value, then just return it
+		if($value instanceof KeyValueArray) return $value;
+
+		// start a blank value to be populated
+		$keyValuePairs = $this->getBlankValue($page, $field);
+
+		// if we were given a blank value, then we've got nothing to do: just return a blank KeyValueArray
+		if(empty($value) || !is_array($value)) return $keyValuePairs;
+
+		// create new KeyValue objects from each item in the array
+		foreach($value as $v) {
+			$keyValue = new KeyValue();
+			$keyValue->key = $v['label'];
+			$keyValue->value = $v['data']; // note we're converting 'data' to 'date'
+			$keyValue->setTrackChanges(true); 
+			$keyValuePairs->add($keyValue); 
+		}
+
+		$keyValuePairs->resetTrackChanges();
+
+		// sort output by sort setting, defauls to label ascending
+		$keyValuePairs->sort($this->sorting);
+
+        return $keyValuePairs;  
+    }
+
+    /**
+     * Given an 'awake' value, as set by wakeupValue, convert the value back to a basic type for storage in DB. 
+     *              
+     * @param Page $page
+     * @param Field $field
+     * @param string|int|array|object $value
+     * @return string|int
+     *
+     */
+    public function ___sleepValue(Page $page, Field $field, $value) {
+
+		$sleepValue = array();
+
+		// if we are given something other than an KeyValueArray, 
+		// then just return a blank array
+		if(!$value instanceof KeyValueArray) return $sleepValue; 
+
+		// make the keyValues sort by label ascending
+		$value->sort('key');
+
+		// convert each KeyValue to an array within sleepValue
+		foreach($value as $keyValue) {
+			$sleepValue[] = array(
+				'label' => $keyValue->key, 
+				'data' => $keyValue->value // note: date is becoming data 
+				); 
+		}
+
+		return $sleepValue;
+    }
+
+	/**
+	 * Given a value, make it clean for storage within a Page
+	 *
+	 */
+	public function sanitizeValue(Page $page, Field $field, $value) {
+
+		// if given a blank value, return a valid blank value
+		if(empty($value)) return $this->getBlankValue($page, $field, $value); 
+
+		// if given something other than an KeyValueArray, throw an error
+		if(!$value instanceof KeyValueArray) {
+			throw new WireException("Value set to field '$field->name' must be an KeyValueArray"); 
+		}
+
+		// note that sanitization of individual fields within a given keyValue is already 
+		// performed by the KeyValue::set() method, so we don't need to do anything else here.
+
+		return $value; 	
+	}
+
+	/**
+	 * Format a value for output, called when a Page's outputFormatting is on
+	 *
+	 */
+	public function formatValue(Page $page, Field $field, $value) {
+		// we actually don't need to do anything in here since each KeyValue object
+		// is doing this work in the KeyValue::get() method. But I've included this
+		// comment here just to explain where that is taking place. 
+		return $value; 
+	}
+
+	/**
+	 * Return the database schema that defines an KeyValue
+	 *
+	 */
+	public function getDatabaseSchema(Field $field) {
+		$schema = parent::getDatabaseSchema($field); 
+
+		// our text fields
+		$schema['label'] = 'TEXT NOT NULL'; 
+
+		// 'data' is a required field for any Fieldtype, and we're using it to represent our 'date' field
+		$schema['data'] = 'TEXT NOT NULL'; 
+
+		// indexes, for any fields that need to be searchable from selectors
+		// in this case, we're just making our 'date' field searchable
+		// but the others could easily be added, likely as fulltext indexes
+		$schema['keys']['data'] = 'FULLTEXT KEY data(data)'; 
+		$schema['keys']['label'] = 'FULLTEXT KEY label(label)'; 
+
+		return $schema; 
+	}
+
+	/**
+	 * Method called when the field is database-queried from a selector 
+	 *
+	 */
+	public function getMatchQuery($query, $table, $subfield, $operator, $value) {
+
+		// If searching 'date' then assume our default (data) field 
+		if ($subfield == 'value') $subfield = 'data';
+		else if ($subfield == 'key') $subfield = 'label';
+
+		// if value is a formatted date, convert it to unix timestamp
+		if (!ctype_digit("$value")) $value = strtotime($value); 
+
+		return parent::getMatchQuery($query, $table, $subfield, $operator, $value); 
+	}
+
+
+
+}
+

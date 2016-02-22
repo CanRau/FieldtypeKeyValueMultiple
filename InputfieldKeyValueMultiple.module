@@ -1,0 +1,262 @@
+<?php
+
+class InputfieldKeyValueMultiple extends Inputfield {
+
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Key Value Multiple',
+			'version' => 1,
+			'summary' => 'Input field for key value pairs.',
+			'requires' => 'FieldtypeKeyValueMultiple', 
+			);
+	}
+
+	protected $page;
+	protected $field; 
+
+	public function init() {
+		$this->set('keyLabel', 'Key');
+		$this->set('valueLabel', 'Value');
+
+		$this->set('keyWidth', '30');
+		$this->set('valueWidth', '70');
+
+		// if($this->languages) foreach($this->languages as $language) {
+		// 	// account for alternate formats in other languages
+		// 	/** @var Language $language */
+		// 	if($language->isDefault()) continue; 
+		// 	$this->set("keyLabel__$language", $this->get("keyLabel__$language"));
+		// 	$this->set("valueLabel__$language", $this->get("valueLabel__$language"));
+		// }
+	}
+
+	public function setPage(Page $page) {
+		$this->page = $page; 
+	}
+
+	public function setField(Field $field) {
+		$this->field = $field;
+	}
+
+	public function ___getConfigArray() {
+		return array(
+			'keyLabel' => array(
+				'type' => 'text',
+				'label' => $this->_('Label for key field'),
+				'value' => '',
+				'notes' => $this->_('Defaults to "Key"'),
+				'columnWidth' => $this->keyWidth,
+				'useLanguages' => true
+			),
+			'valueLabel' => array(
+				'type' => 'text',
+				'label' => $this->_('Label for value field'),
+				'value' => '',
+				'notes' => $this->_('Defaults to "Value"'),
+				'columnWidth' => $this->valueWidth,
+				'useLanguages' => true
+			),
+			'keyWidth' => array(
+				'type' => 'integer',
+				'label' => $this->_('Width of key field'),
+				'value' => '',
+				'notes' => $this->_('Defaults to 30%'),
+				'size' => 100,
+				'columnWidth' => $this->keyWidth,
+				'useLanguages' => true
+			),
+			'valueWidth' => array(
+				'type' => 'integer',
+				'label' => $this->_('Width of value field'),
+				'value' => '',
+				'notes' => $this->_('Defaults to 70%'),
+				'size' => 100,
+				'columnWidth' => $this->valueWidth,
+				'useLanguages' => true
+			)
+		);
+	}
+
+
+	/**
+	 * Date/time Inputfield configuration, per field
+	 *
+	 */
+	// public function ___getConfigInputfields() {
+
+	// 	$inputfields = parent::___getConfigInputfields();
+	// 	$languages = wire('languages');
+
+	// 	$f = $this->modules->get("InputfieldText");
+	// 	$f->attr('name', 'keyLabel');
+	// 	$f->attr('value', $this->keyLabel ? : '');
+	// 	$f->columnWidth = 50;
+	// 	$f->label = $this->_('Label for key field');
+	// 	$f->notes = $this->_('Defaults to "Key"');
+	// 	$f1 = $f;
+	// 	// $inputfields->add($f);
+
+	// 	$f = $this->modules->get("InputfieldText");
+	// 	$f->attr('name', 'valueLabel');
+	// 	$f->attr('value', $this->valueLabel ? : '');
+	// 	$f->columnWidth = 50;
+	// 	$f->label = $this->_('Label for value field');
+	// 	$f->notes = $this->_('Defaults to "Value"');
+	// 	$f2 = $f;
+
+	// 	if($languages) {
+	// 		$f1->useLanguages = true; 
+	// 		$f2->useLanguages = true; 
+	// 		foreach($languages as $language) {
+	// 			/** @var Language $language */
+	// 			if($language->isDefault()) continue; 
+	// 			$f1->attr("value$language", (string) $this->get("keyLabel$language")); 	
+	// 			$f2->attr("value$language", (string) $this->get("valueLabel$language")); 	
+	// 		}
+	// 	}
+
+	// 	$inputfields->add($f1);
+	// 	$inputfields->add($f2);
+
+	// 	return $inputfields; 
+	// }
+
+	public function ___getConfigAllowContext($field) {
+		return array(
+			'keyLabel',
+			'valueLabel',
+			'keyWidth',
+			'valueWidth'
+		);
+	}
+
+	/**
+	 * Render a table row for an individual KeyValue input
+	 *
+	 */
+	protected function renderRow(KeyValue $keyValue, $cnt, $class = 'KeyValue') {
+
+		$name = $this->attr('name');
+		$key = $this->sanitizer->entities($keyValue->key); 
+		$value = $this->sanitizer->entities($keyValue->value); 
+
+		$out = "
+			<tr class='KeyValue$cnt $class'>
+				<td><a href='#' class='KeyValueClone'><span class='ui-icon ui-icon-copy'></span></a></td>
+				<td><input type='text' name='{$name}_key[]' value='$key' size='$this->keyWidth' /></td>
+				<td><input type='text' name='{$name}_value[]' value='$value' size='$this->valueWidth' /></td>
+				<td>
+					<a href='#' class='KeyValueDel ui-helper-clearfix'><span class='ui-icon ui-icon-trash'></span></a>
+					<input type='hidden' name='{$name}_del[]' value='0' />
+				</td>
+			</tr>
+			";
+
+		$f1 = $this->modules->get('InputfieldText');
+		$f1->attr('name', "{$name}__key[]");
+		$f1->attr('value', $key);
+		$f1->columnWidth = $this->keyWidth;
+		$f1->useLanguages = true;
+
+		$f2 = $this->modules->get('InputfieldText');
+		$f2->attr('name', "{$name}__value[]");
+		$f2->attr('value', $value);
+		$f2->columnWidth = $this->valueWidth;
+		$f2->useLanguages = true;
+
+		return $out; 
+	}
+
+	/**
+	 * Render the entire input area for Events
+	 *
+	 */
+	public function ___render() {
+		// $languages = $this->wire('languages');
+		// $numLanguages = $languages->count();
+		// $hasLangTabs = $this->wire('modules')->isInstalled('LanguageTabs') ? true : false;
+
+		// get KeyValue template for creating new events
+		$tbody = $this->renderRow(new KeyValue(), 0, 'KeyValue KeyValueTemplate'); 
+		
+		// render rows for existing KeyValue Pairs	
+		foreach($this->attr('value') as $cnt => $keyValue) {
+			$tbody .= $this->renderRow($keyValue, $cnt); 
+		}	
+
+		$out = 	"
+		<table class='InputfieldKeyValueMultiple'>
+			<thead>
+			<tr class=''>
+				<th class='KeyValueClone'>&nbsp;</th>
+				<th class='KeyValueKey'>$this->keyLabel</th>
+				<th class='KeyValueValue'>$this->valueLabel</th>
+				<th class='KeyValueDel'>
+					<a title='Delete All' href='#' class='KeyValueDel'><span class='ui-icon ui-icon-trash'></span></a>
+				</th>
+			</tr>
+			</thead>
+			<tbody>
+			$tbody
+			</tbody>
+		</table>
+		";
+
+		// if($numLanguages > 1 && $hasLangTabs) {
+		// 	$out = "<div class='hasLangTabs langTabsContainer'><div class='langTabs'><ul>$tabs</ul>$out</div></div>";
+		// 	if($this->isAjax) $out .= "<script>setupLanguageTabs($('#wrap_" . $this->attr('id') . "'));</script>";
+		// }
+
+		// add a button that triggers adding a new key/value pair
+		$btn = $this->modules->get('InputfieldButton');
+		$btn->attr('id', $this->attr('name') . "_new"); 
+		$btn->class .= " InputfieldKeyValueMultipleAdd";
+		$btn->icon = 'plus-sign';
+		$btn->value = $this->_('Add New entry'); 
+		$out .= $btn->render();
+
+		return $out; 
+	}
+
+	/**
+	 * Process input for the KeyValues inputs
+	 *
+	 */
+	public function ___processInput(WireInputData $input) {
+
+		if(!$this->page || !$this->field) {
+			throw new WireException("This inputfield requires that you set valid 'page' and 'field' properties to it."); 
+		}
+
+		$name = $this->attr('name'); 
+		$keyValuePairs = $this->field->type->getBlankValue($this->page, $this->field); 
+		$numDeleted = 0; 
+
+		foreach($input->{"{$name}_key"} as $cnt => $key) {
+
+			if(!$cnt) continue; // template for 'new' item is the first, so we can ignore it
+
+			// check if the item is being deleted
+			if($input->{"{$name}_del"}[$cnt]) {
+				// if being deleted, then we simply skip over it
+				$numDeleted++;
+				continue; 
+			}
+
+			// create the $keyValue and add it to our $keyValuePairs
+			$keyValue = new KeyValue();
+			$keyValue->key = $key; 
+			$keyValue->value = $input->{"{$name}_value"}[$cnt];
+			$keyValuePairs->add($keyValue); 
+		}
+
+		// if the string values of the processed keyValuePairs are different from the previous,
+		// or if any keyValuePairs have been deleted, then flag this Inputfield as changed
+		// so that it will be automatically saved with the page
+		if("$keyValuePairs" != "$this->value" || $numDeleted) {
+			$this->attr('value', $keyValuePairs); 
+			$this->trackChange('value'); 
+		}
+	}
+}
+
