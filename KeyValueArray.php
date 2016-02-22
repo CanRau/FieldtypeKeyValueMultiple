@@ -52,6 +52,8 @@ class KeyValueArray extends WireArray {
 	// }
 
 	public function remove($item) {
+		// unset($this->data[$item]);
+		// return;
 		if(is_string($item)) $item = $this->get($item); 
 		if(!$this->isValidItem($item)) throw new WireException("Invalid type to {$this->className}::remove(item)");
 		parent::remove($item); 
